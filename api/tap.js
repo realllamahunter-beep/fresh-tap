@@ -18,15 +18,14 @@ export default async function handler(req, res) {
 
     const piccBuffer = Buffer.from(picc_data, 'hex');
     const cmacBuffer = Buffer.from(cmac, 'hex');
-    const keyBuffer  = Buffer.from(keyHex, 'hex');
 
-    // Decrypt the PICC data – same as the test server
-    const decrypted = decryptPicc(piccBuffer, keyBuffer);
+    // Pass keyHex as a hex string directly (not a Buffer)
+    const decrypted = decryptPicc(piccBuffer, keyHex);
     const uidBuffer = Buffer.from(decrypted.uid, 'hex');
     const plainData = Buffer.concat([uidBuffer, decrypted.cnt]);
 
-    // Re‑compute the CMAC over the plain data
-    const expectedCmac = calculateCmacBuffer(plainData, keyBuffer);
+    // calculateCmacBuffer expects (dataBuffer, keyHexString)
+    const expectedCmac = calculateCmacBuffer(plainData, keyHex);
 
     if (expectedCmac.equals(cmacBuffer)) {
       const counter = decrypted.cnt.readUIntLE(0, 3);
@@ -35,7 +34,6 @@ export default async function handler(req, res) {
       return res.redirect('/?valid=false');
     }
   } catch (error) {
-    // Any error → show it as JSON so we can debug if needed
     return res.status(200).json({ error: error.message });
   }
 }
