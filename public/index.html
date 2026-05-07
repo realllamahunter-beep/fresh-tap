@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tap Verification</title>
+</head>
+<body>
+  <h1 id="status">Checking...</h1>
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const valid = params.get('valid');
+    document.getElementById('status').textContent = valid === 'true' ? '✅ AUTHENTIC' : '❌ INVALID';
+  </script>
+</body>
+</html>
