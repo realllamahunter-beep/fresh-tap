@@ -1,6 +1,6 @@
 import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
-const { decryptPicc, calculateCmacBuffer } = require('node-sdm');
+const { verify } = require('node-sdm');
 
 const keyHex = (process.env.NTAG_KEY || '').trim();
 
@@ -16,23 +16,15 @@ export default async function handler(req, res) {
       return res.redirect('/?valid=false');
     }
 
-    const piccBuffer = Buffer.from(picc_data, 'hex');
-    const cmacBuffer = Buffer.from(cmac, 'hex');
-    const keyBuffer = Buffer.from(keyHex, 'hex');
+    const result = verify(picc_data, cmac, keyHex, { encoding: 'hex' });
 
-    const decrypted = decryptPicc(piccBuffer, keyBuffer);
-    const uidBuffer = Buffer.from(decrypted.uid, 'hex');
-    const plainData = Buffer.concat([uidBuffer, decrypted.cnt]);
-
-    const expectedCmac = calculateCmacBuffer(plainData, keyBuffer);
-
-    if (expectedCmac.equals(cmacBuffer)) {
-      const counter = decrypted.cnt.readUIntLE(0, 3);
-      return res.redirect(`/?uid=${decrypted.uid}&counter=${counter}&valid=true`);
+    if (result.valid) {
+      return res.redirect(`/?uid=${result.uid}&counter=${result.cnt}&valid=true`);
     } else {
       return res.redirect('/?valid=false');
     }
   } catch (error) {
-    return res.redirect('/?valid=false');
+    // If there's a code error, we'll see it here as a JSON response
+    return res.status(200).json({ error: error.message });
   }
 }
